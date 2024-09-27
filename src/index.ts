@@ -11,8 +11,8 @@ import * as fs from "node:fs";
 const socket = io('https://games.uhno.de', {
     transports: ['websocket']
 });
-const first = ['D', 'S', 'E', 'N', 'I']
-const second = ['W', 'R', 'A', 'T', 'O', 'U']
+const first = ['E', 'N', 'I']
+const second = ['W', 'R', 'A', 'T', 'O', 'U', 'D', 'S',]
 const others = ['H', 'U', 'L', 'C', 'G', 'M', 'O', 'B', 'W', 'F', 'K', 'Z', 'P', 'V', 'J', 'Y', 'X', 'Q'];
 let set: Set<string> = new Set(words)
 let count: number = 0;
