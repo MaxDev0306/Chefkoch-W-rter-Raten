@@ -1,7 +1,7 @@
 import {io} from 'socket.io-client';
 
 require('dotenv').config()
-const words = require('./words.json');
+const words: string[] = require('./words.json');
 
 const SECRET = process.env.BOT_SECRET;
 import {Callback, InitData, ResultData, RoundData} from './types';
@@ -15,6 +15,8 @@ const first = ['E', 'N', 'I']
 const second = ['S', 'R', 'A', 'T', 'D', 'O', 'U']
 const others = ['H', 'U', 'L', 'C', 'G', 'M', 'O', 'B', 'W', 'F', 'K', 'Z', 'P', 'V', 'J', 'Y', 'X', 'Q'];
 let set: Set<string> = new Set(words)
+let count: number = 0;
+let score: number = 0;
 
 socket.on('connect', () => {
     socket.emit('authenticate', SECRET, (success: boolean) => {
@@ -31,7 +33,7 @@ socket.on('data', (data, callback) => {
             result(data);
             return;
         case 'ROUND':
-            testAction(data, callback);
+            round(data, callback);
     }
 });
 
@@ -40,6 +42,7 @@ socket.on('disconnect', () => {
 });
 
 function init(data: InitData) {
+    count++;
     let wordList: string[] = [];
     try {
         const words = fs.readFileSync('woerter.txt', 'utf-8');
@@ -54,6 +57,7 @@ function init(data: InitData) {
 }
 
 function result(data: ResultData) {
+    score = score + data.players[0].score;
     try {
         if (!set.has(data.word))
             appendFile('woerter.txt', `${data.word}, \n`, () => {
@@ -61,12 +65,13 @@ function result(data: ResultData) {
     } catch (err) {
         console.error('Fehler beim Schreiben der Datei:', err);
     }
-    console.log(data.word)
-    console.log(data.guessed)
-    console.log(data.players[0].score)
+    console.log('word: ' + data.word)
+    console.log('current score: ' + data.players[0].score)
+    console.log('round: ' + count.toString())
+    console.log('average: ' + (score / count).toString())
 }
 
-function testAction(data: RoundData, callback: Callback) {
+function round(data: RoundData, callback: Callback) {
     firstGuesses(data, callback);
     console.log(data.word)
     const frequentLetters: string[] = mostFrequentLetters(data.word);
@@ -124,7 +129,6 @@ function firstGuesses(data: RoundData, callback: Callback) {
         processGuessed(data.guessed, callback, 'H');
         processGuessed(data.guessed, callback, 'K');
     }
-
     first.forEach((character: string) => {
         processGuessed(data.guessed, callback, character);
     });
@@ -193,3 +197,8 @@ function mostFrequentLetters(word: string) {
     return getSortedLetters(matchingWords)
 }
 
+function hasAtLeastTwoLetters(str: string): boolean {
+    const letters = str.match(/[A-Za-z]/g);
+
+    return letters !== null && letters.length >= 2;
+}
