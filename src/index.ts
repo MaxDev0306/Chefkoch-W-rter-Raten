@@ -6,7 +6,6 @@ const socket = io('https://games.uhno.de', {
   transports: ['websocket']
 })
 socket.on('connect', () => {
-  // dein Bot ist verbunden
   socket.emit('authenticate', SECRET, (success: boolean) => {
     console.log('connected: ', success)
   });
@@ -16,9 +15,7 @@ socket.on('disconnect', () => {
 });
 
 
-const alphabet: string[] = ["E","N","R","S","T","I","A","H","L","n","e","n","e","n","e","n",]
-const guessed: string[] = []
-const score: number = 0;
+let alphabet: string[] = ["E","N","R","S","T","I","A","H","L","U","G","D","C","M","B","O","F","K","Z","P","W","V","Y","J","X","Q"]
 
 
 socket.on('data', (data, callback:(guess:string)=> void) => {
@@ -35,14 +32,21 @@ socket.on('data', (data, callback:(guess:string)=> void) => {
 });
 
 function init(data: InitData) {
-    console.log(data)
 }
 
 function result(data: ResultData) {
-    console.log(data)
+    console.log("word: " + data.word)
+    console.log("score: " + data.players[0].score)
+    console.log("guessed: " + data.guessed)
 }
 
 function round(data: RoundData,callback:(guess:string)=> void) {
-    console.log(data)
-    callback("e")
+    let called = false
+    console.log(data.word)
+    alphabet.forEach((value) => {
+        if(!called && !data.guessed.includes(value)){
+            callback(value)
+            called = true
+        }
+    })
 }
