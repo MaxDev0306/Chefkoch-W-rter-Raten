@@ -33,5 +33,5 @@ export type Log = {
 
 export type Player = {
     id: string,
-    score:number
+    score: number
 }
