@@ -35,3 +35,5 @@ export type Player = {
     id: string,
     score:number
 }
+
+export type Callback = (character: string) => void
