@@ -2,6 +2,8 @@ import {io} from 'socket.io-client';
 require('dotenv').config()
 const SECRET = process.env.BOT_SECRET;
 import { InitData, ResultData, RoundData } from './types';
+import {client} from './db';
+
 const socket = io('https://games.uhno.de', {
   transports: ['websocket']
 });
@@ -34,6 +36,9 @@ const strategies: Map<string, number> = new Map([
 ])
 let currentStrategie = '';
 let lastScore = 0;
+
+client.connect()
+.then(() => console.log('Connect to db: '));
 
 socket.on('connect', () => {
   // dein Bot ist verbunden
@@ -69,7 +74,7 @@ function init(data: InitData) {
     }
 
     if (roundsPlayed % 30 === 0) {
-      const sorted = new Map([...strategies.entries()].sort((a, b) => b[1] - a[1]))
+      const sorted = new Map([...strategies.entries()].sort((a, b) => a[1] - b[1]))
       console.log('---------------------------------')
       const keys = Array.from(sorted.keys())
       keys.forEach((key) => {
