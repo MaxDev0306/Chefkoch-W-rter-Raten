@@ -5,13 +5,25 @@ const socket = io('https://games.uhno.de', {
   transports: ['websocket']
 });
 
-console.log(SECRET)
+const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 socket.on('connect', () => {
   // dein Bot ist verbunden
   socket.emit('authenticate', SECRET, (success: boolean) => {
     console.log('connected: ', success)
 
+    socket.on('data', (data, callback) => {
+        switch (data.type) {
+          case 'INIT':
+            init(data);
+            return;
+          case 'RESULT':
+            result(data);
+            return;
+          case 'ROUND':
+            round(data, callback);
+        }
+      });
   });
 });
 
@@ -27,6 +39,8 @@ function result(data: ResultData) {
     console.log(data)
 }
 
-function round(data: RoundData) {
+function round(data: RoundData, callback: (guess: string) => void) {
     console.log(data)
+    const letterIndex = Math.random() * 26
+    callback(chars.charAt(letterIndex))
 }
