@@ -5,15 +5,16 @@ const words = require('./words.json');
 
 const SECRET = process.env.BOT_SECRET;
 import {Callback, InitData, ResultData, RoundData} from './types';
+import {appendFile} from "fs";
+import * as fs from "node:fs";
 
 const socket = io('https://games.uhno.de', {
     transports: ['websocket']
 });
-const test = ['E', 'N', 'I']
-const test2 = ['S', 'R', 'A', 'T', 'D', 'O', 'U']
-const first = ['E', 'N', 'I', 'S', 'R', 'A', 'T'];
-const second = ['D', 'O', 'U']
+const first = ['E', 'N', 'I']
+const second = ['S', 'R', 'A', 'T', 'D', 'O', 'U']
 const others = ['H', 'U', 'L', 'C', 'G', 'M', 'O', 'B', 'W', 'F', 'K', 'Z', 'P', 'V', 'J', 'Y', 'X', 'Q'];
+let set: Set<string> = new Set(words)
 
 socket.on('connect', () => {
     socket.emit('authenticate', SECRET, (success: boolean) => {
@@ -39,86 +40,30 @@ socket.on('disconnect', () => {
 });
 
 function init(data: InitData) {
+    let wordList: string[] = [];
+    try {
+        const words = fs.readFileSync('woerter.txt', 'utf-8');
+        wordList = words.split('\r\n');
+    } catch (err) {
+        console.error('Fehler beim Laden der Wortliste:', err);
+    }
+
+    wordList.map((word: string) => {
+        set.add(word)
+    })
 }
 
 function result(data: ResultData) {
+    try {
+        if (!set.has(data.word))
+            appendFile('woerter.txt', `${data.word}, \n`, () => {
+            });
+    } catch (err) {
+        console.error('Fehler beim Schreiben der Datei:', err);
+    }
     console.log(data.word)
     console.log(data.guessed)
     console.log(data.players[0].score)
-}
-
-function round(data: RoundData, callback: Callback) {
-    const guessed: string[] = data.guessed;
-    const word: string = data.word;
-
-    if (word.includes('NG')) {
-        processGuessed(guessed, callback, 'U');
-    }
-
-    if (word.includes('ER')) {
-        processGuessed(guessed, callback, 'V');
-    }
-
-    if (word.includes('ICH')) {
-        processGuessed(guessed, callback, 'L');
-    }
-
-    if (word.includes('EIT')) {
-        processGuessed(guessed, callback, 'H');
-        processGuessed(guessed, callback, 'K');
-    }
-
-    first.forEach((character: string) => {
-        processGuessed(guessed, callback, character);
-    });
-
-    if (word.includes('E')) {
-        processGuessed(guessed, callback, 'I');
-        processGuessed(guessed, callback, 'U');
-    }
-
-    if (word.includes('A')) {
-        processGuessed(guessed, callback, 'U');
-    }
-
-    second.forEach((character: string) => {
-        processGuessed(guessed, callback, character);
-    });
-
-    if (word.includes('S')) {
-        processGuessed(guessed, callback, 'C');
-        processGuessed(guessed, callback, 'T');
-        processGuessed(guessed, callback, 'P');
-    }
-
-    if (word.includes('C')) {
-        processGuessed(guessed, callback, 'H');
-        processGuessed(guessed, callback, 'K');
-    }
-
-    if (word.includes('N')) {
-        processGuessed(guessed, callback, 'G');
-    }
-
-    if (word.includes('G')) {
-        processGuessed(guessed, callback, 'E');
-    }
-
-    if (word.includes('UA') || word.includes('UO') || word.includes('UI') || word.includes('UE')) {
-        processGuessed(guessed, callback, 'Q');
-    }
-
-    if (word.includes('OR')) {
-        processGuessed(guessed, callback, 'V');
-    }
-
-    if (word.includes('AH')) {
-        processGuessed(guessed, callback, 'Z')
-    }
-
-    others.forEach((character: string) => {
-        processGuessed(guessed, callback, character);
-    });
 }
 
 function testAction(data: RoundData, callback: Callback) {
@@ -143,7 +88,7 @@ function createRegexFromPattern(input: string) {
     return new RegExp(`^${regexPattern}$`, 'i');
 }
 
-function getSortedLetters(words: string) {
+function getSortedLetters(words: string[]) {
     const letterCount: any = {};
 
     for (const word of words) {
@@ -180,7 +125,7 @@ function firstGuesses(data: RoundData, callback: Callback) {
         processGuessed(data.guessed, callback, 'K');
     }
 
-    test.forEach((character: string) => {
+    first.forEach((character: string) => {
         processGuessed(data.guessed, callback, character);
     });
 }
@@ -195,7 +140,7 @@ function lastGuesses(data: RoundData, callback: Callback) {
         processGuessed(data.guessed, callback, 'U');
     }
 
-    test2.forEach((character: string) => {
+    second.forEach((character: string) => {
         processGuessed(data.guessed, callback, character);
     });
 
@@ -237,7 +182,14 @@ function lastGuesses(data: RoundData, callback: Callback) {
 
 function mostFrequentLetters(word: string) {
     const pattern = createRegexFromPattern(word);
-    const matchingWords = words.filter((word: string) => pattern.test(word));
+    const matchingWords: string[] = [];
+
+    set.forEach((value: string) => {
+        if (value.match(pattern)) {
+            matchingWords.push(value)
+        }
+    })
+
     return getSortedLetters(matchingWords)
 }
 
