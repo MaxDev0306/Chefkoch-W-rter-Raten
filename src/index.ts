@@ -2,7 +2,6 @@ import {io} from 'socket.io-client';
 require('dotenv').config()
 const SECRET = process.env.BOT_SECRET;
 import { InitData, ResultData, RoundData } from './types';
-import {client} from './db';
 
 const socket = io('https://games.uhno.de', {
   transports: ['websocket']
@@ -37,8 +36,30 @@ const strategies: Map<string, number> = new Map([
 let currentStrategie = '';
 let lastScore = 0;
 
-client.connect()
-.then(() => console.log('Connect to db: '));
+const getJSON = function(url: string, callback: (err: number|null, data: string[]) => void) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.responseType = 'json';
+  xhr.onload = function() {
+    var status = xhr.status;
+    if (status === 200) {
+      callback(null, xhr.response);
+    } else {
+      callback(status, xhr.response);
+    }
+  };
+  xhr.send();
+};
+
+getJSON('https://raw.githubusercontent.com/Jonny-exe/German-Words-Library/master/German-words-5000-words.json',
+    function(err, data) {  
+      if (err !== null) {
+        alert('Something went wrong: ' + err);
+      } else {
+        // Data is the JS array
+      }
+    }
+  );
 
 socket.on('connect', () => {
   // dein Bot ist verbunden
