@@ -1,7 +1,7 @@
 import {io} from 'socket.io-client';
 
 require('dotenv').config()
-const words: string[] = require('./words.json');
+const words: string[] = require('../words.json');
 
 const SECRET = process.env.BOT_SECRET;
 import {Callback, InitData, ResultData, RoundData} from './types';
@@ -11,8 +11,8 @@ import * as fs from "node:fs";
 const socket = io('https://games.uhno.de', {
     transports: ['websocket']
 });
-const first = ['E', 'N', 'I']
-const second = ['S', 'R', 'A', 'T', 'D', 'O', 'U']
+const first = ['D', 'S', 'E', 'N', 'I']
+const second = ['W', 'R', 'A', 'T', 'O', 'U']
 const others = ['H', 'U', 'L', 'C', 'G', 'M', 'O', 'B', 'W', 'F', 'K', 'Z', 'P', 'V', 'J', 'Y', 'X', 'Q'];
 let set: Set<string> = new Set(words)
 let count: number = 0;
@@ -74,7 +74,7 @@ function result(data: ResultData) {
 function round(data: RoundData, callback: Callback) {
     firstGuesses(data, callback);
     console.log(data.word)
-    const frequentLetters: string[] = mostFrequentLetters(data.word);
+    const frequentLetters: string[] = mostFrequentLetters(data.word, data.guessed);
     const filteredFrequentLetters = frequentLetters.filter((letter: string) => !data.guessed.includes(letter));
     filteredFrequentLetters.map((letter: string) => {
         processGuessed(data.guessed, callback, letter.toUpperCase());
@@ -88,8 +88,8 @@ function processGuessed(guessed: string[], callback: Callback, character: string
     }
 }
 
-function createRegexFromPattern(input: string) {
-    const regexPattern = input.replace(/_/g, '.');
+function createRegexFromPattern(input: string, guessed: string[]) {
+    const regexPattern = input.replace(/_/g, `[^${guessed.join('')}]`);
     return new RegExp(`^${regexPattern}$`, 'i');
 }
 
@@ -184,8 +184,8 @@ function lastGuesses(data: RoundData, callback: Callback) {
     });
 }
 
-function mostFrequentLetters(word: string) {
-    const pattern = createRegexFromPattern(word);
+function mostFrequentLetters(word: string, guessed: string[]) {
+    const pattern = createRegexFromPattern(word, guessed);
     const matchingWords: string[] = [];
 
     set.forEach((value: string) => {
