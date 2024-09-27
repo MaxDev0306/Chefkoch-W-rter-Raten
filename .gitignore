@@ -1,3 +1,5 @@
 node_modules
 .env
 ./src/words.json
+src/words.json
+src/woerter.txt
