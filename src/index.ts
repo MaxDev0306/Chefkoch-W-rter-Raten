@@ -7,13 +7,16 @@ const SECRET = process.env.BOT_SECRET;
 import {Callback, InitData, ResultData, RoundData} from './types';
 import {appendFile} from "fs";
 import * as fs from "node:fs";
+import {match} from "node:assert";
 
 const socket = io('https://games.uhno.de', {
     transports: ['websocket']
 });
+
+const all = ['E', 'N', 'I', 'S', 'R', 'A', 'T', 'D', 'O', 'U', 'H', 'L', 'C', 'G', 'M', 'B', 'W', 'F', 'K', 'Z', 'P', 'V', 'J', 'Y', 'X', 'Q']
 const first = ['E', 'N', 'I']
 const second = ['S', 'R', 'A', 'T', 'D', 'O', 'U']
-const others = ['H', 'U', 'L', 'C', 'G', 'M', 'O', 'B', 'W', 'F', 'K', 'Z', 'P', 'V', 'J', 'Y', 'X', 'Q'];
+const others = ['H', 'L', 'C', 'G', 'M', 'B', 'W', 'F', 'K', 'Z', 'P', 'V', 'J', 'Y', 'X', 'Q'];
 let set: Set<string> = new Set(words)
 let count: number = 0;
 let score: number = 0;
@@ -72,14 +75,13 @@ function result(data: ResultData) {
 }
 
 function round(data: RoundData, callback: Callback) {
-    firstGuesses(data, callback);
-    console.log(data.word)
-    const frequentLetters: string[] = mostFrequentLetters(data.word);
-    const filteredFrequentLetters = frequentLetters.filter((letter: string) => !data.guessed.includes(letter));
+    guessTillTwoCharactersFound(data, callback);
+    const frequentLetters: string[] = mostFrequentLetters(data);
+    const filteredFrequentLetters = frequentLetters.filter((letter: string) => !data.guessed.includes(letter.toUpperCase()));
     filteredFrequentLetters.map((letter: string) => {
         processGuessed(data.guessed, callback, letter.toUpperCase());
     })
-    lastGuesses(data, callback)
+    fallback(data, callback)
 }
 
 function processGuessed(guessed: string[], callback: Callback, character: string) {
@@ -88,8 +90,8 @@ function processGuessed(guessed: string[], callback: Callback, character: string
     }
 }
 
-function createRegexFromPattern(input: string) {
-    const regexPattern = input.replace(/_/g, '.');
+function createRegexFromPattern(input: string, guessed: string[]) {
+    const regexPattern = input.replace(/_/g, `[^${guessed.join('')}]`);
     return new RegExp(`^${regexPattern}$`, 'i');
 }
 
@@ -112,7 +114,7 @@ function getSortedLetters(words: string[]) {
     return sortedLetters;
 }
 
-function firstGuesses(data: RoundData, callback: Callback) {
+function fallback(data: RoundData, callback: Callback) {
     if (data.word.includes('NG')) {
         processGuessed(data.guessed, callback, 'U');
     }
@@ -129,12 +131,7 @@ function firstGuesses(data: RoundData, callback: Callback) {
         processGuessed(data.guessed, callback, 'H');
         processGuessed(data.guessed, callback, 'K');
     }
-    first.forEach((character: string) => {
-        processGuessed(data.guessed, callback, character);
-    });
-}
 
-function lastGuesses(data: RoundData, callback: Callback) {
     if (data.word.includes('E')) {
         processGuessed(data.guessed, callback, 'I');
         processGuessed(data.guessed, callback, 'U');
@@ -179,17 +176,17 @@ function lastGuesses(data: RoundData, callback: Callback) {
         processGuessed(data.guessed, callback, 'Z')
     }
 
-    others.forEach((character: string) => {
+    all.forEach((character: string) => {
         processGuessed(data.guessed, callback, character);
     });
 }
 
-function mostFrequentLetters(word: string) {
-    const pattern = createRegexFromPattern(word);
+function mostFrequentLetters(data: RoundData) {
+    const pattern = createRegexFromPattern(data.word, data.guessed);
     const matchingWords: string[] = [];
 
     set.forEach((value: string) => {
-        if (value.match(pattern)) {
+        if (pattern.test(value)) {
             matchingWords.push(value)
         }
     })
@@ -201,4 +198,12 @@ function hasAtLeastTwoLetters(str: string): boolean {
     const letters = str.match(/[A-Za-z]/g);
 
     return letters !== null && letters.length >= 2;
+}
+
+function guessTillTwoCharactersFound(data: RoundData, callback: Callback) {
+    all.forEach((character: string) => {
+        if (!hasAtLeastTwoLetters(data.word)) {
+            processGuessed(data.guessed, callback, character);
+        }
+    });
 }
