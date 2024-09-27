@@ -1,43 +1,50 @@
 import {io} from 'socket.io-client';
+import {appendFile, readFile} from "fs";
 require('dotenv').config()
 const SECRET = process.env.BOT_SECRET;
 import { InitData, ResultData, RoundData } from './types';
 const socket = io('https://games.uhno.de', {
   transports: ['websocket']
 });
+
+
 socket.on('connect', () => {
   socket.emit('authenticate', SECRET, (success: boolean) => {
     console.log('Bot connected: ', success)
   });
 });
 
+let chars: string[] = [];
+let index = 0;
+
 function init(data: InitData) {
-    console.log(data)
+    index = 0;
+
+    console.log('Küche geöffnet...');
+
+    chars = ['E', 'N', 'I', 'S', 'R', 'A', 'T', 'D', 'H', 'U', 'L', 'C', 'G', 'M', 'O', 'B', 'W', 'F', 'K', 'Z', 'P', 'V', 'J', 'Y', 'X', 'Q'];
 }
 
 function result(data: ResultData) {
-    console.log(data)
+    console.log('Küche geschlossen. Score: ', data.players[0].score, ' Versuche: ', index+1);
+
+    appendFile('woerter.txt', data.word + ', \n', (err) => {
+        if (err) console.log('Fehler');
+    })
 }
 
 function getRandomInt(max:number) {
     return Math.floor(Math.random() * max);
 }
 
-function round(data: RoundData, callback: (guess:string) => void) {
-    console.log(data)
+function round(data: RoundData, callback: (e:string) => void) {
+    let ownGuess = '';
 
-    const alphabet = 'BCFGHJKLMOPQUVWXYZ';
-    const firstGuesses = "ENISRATD";
+    ownGuess = chars[index];
 
-    let guess = firstGuesses[getRandomInt(firstGuesses.length - 1)];
-
-    if (data.guessed.includes(guess) && !data.guessed.every(guessedChar => firstGuesses.includes(guessedChar))) {
-        guess = firstGuesses[getRandomInt(firstGuesses.length - 1)];
-    } else if (data.guessed.includes(guess)) {
-        guess = alphabet[getRandomInt(alphabet.length - 1)];
-    }
-
-    callback(guess);
+    console.log('Kochen... Wort: ', data.word, ', Versuch: ', ownGuess);
+    index++;
+    callback(ownGuess);
 }
 
 socket.on('data', (data, callback) => {
