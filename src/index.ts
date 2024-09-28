@@ -28,6 +28,7 @@ socket.on('data', (data, callback:(guess:string)=> void) => {
 
 function result(data: ResultData) {
     appendFile("words.txt",data.word + "\n",() => {})
+    console.log(data.word + " added!")
 
 }
 
