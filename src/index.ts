@@ -48,8 +48,8 @@ function init(data: InitData) {
     count++;
     let wordList: string[] = [];
     try {
-        const words = fs.readFileSync('woerter.txt', 'utf-8');
-        wordList = words.split('\r\n');
+        const words = fs.readFileSync('words.txt', 'utf-8');
+        wordList = words.split('\n');
     } catch (err) {
         console.error('Fehler beim Laden der Wortliste:', err);
     }
@@ -63,7 +63,7 @@ function result(data: ResultData) {
     score = score + data.players[0].score;
     try {
         if (!set.has(data.word))
-            appendFile('woerter.txt', `${data.word}, \n`, () => {
+            appendFile('words.txt', `${data.word}\n`, () => {
             });
     } catch (err) {
         console.error('Fehler beim Schreiben der Datei:', err);
